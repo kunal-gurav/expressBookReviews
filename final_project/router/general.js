@@ -11,24 +11,33 @@ public_users.post("/register", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
-    if(username && password) {
+    if (username && password) {
         //Check if the user does not already exist
-        if(!isValid(username)) {
+        if (!isValid(username)) {
             //Add the new user to users array
-            users.push({"username" : username, "password" : password});
-            return res.status(200).json({message: "User successfully registerted. Now you can login."});
+            users.push({ "username": username, "password": password });
+            return res.status(200).json({ message: "User successfully registerted. Now you can login." });
         } else {
-            return res.status(404).json({message : "User already existes!"});
+            return res.status(404).json({ message: "User already existes!" });
         }
     }
-    return res.status(404).json({message: "Unable to register user."});
-}); 
+    return res.status(404).json({ message: "Unable to register user." });
+});
 
 // Get the book list available in the shop
 public_users.get('/', function (req, res) {
     //Write your code here
     //return res.status(300).json({message: "Yet to be implemented"});
-    res.send(JSON.stringify(books, null, 4));
+    //res.send(JSON.stringify(books, null, 4));
+    new Promise((resolve, reject) => {
+        resolve(books);      // books is your booksdb object
+    })
+        .then((bookList) => {
+            return res.status(200).json(bookList);
+        })
+        .catch((err) => {
+            return res.status(500).json({ message: "Error fetching books" });
+        });
 });
 
 // Get book details based on ISBN
@@ -36,7 +45,22 @@ public_users.get('/isbn/:isbn', function (req, res) {
     //Write your code here
     //return res.status(300).json({message: "Yet to be implemented"});
     const ISBN = req.params.isbn;
-    res.send(books[ISBN]);
+    //res.send(books[ISBN]);
+
+    //Using Promise Call back
+    new Promise((resolve, reject) => {
+        if (books[isbn]) {
+            resolve(books[isbn]);
+        } else {
+            reject("Book not found");
+        }
+    })
+        .then((book) => {
+            return res.status(200).json(book);
+        })
+        .catch((error) => {
+            return res.status(404).json({ message: error });
+        });
 });
 
 // Get book details based on author
@@ -71,13 +95,13 @@ public_users.get('/title/:title', function (req, res) {
     const bookKeys = Object.keys(books);
 
     bookKeys.forEach((key) => {
-        if(books[key].title === title) {
+        if (books[key].title === title) {
             booksByTitle.push(books[key]);
         }
     });
 
-    if(booksByTitle.length === 0) {
-        return res.status(404). json({message: "No Books found with this title"});
+    if (booksByTitle.length === 0) {
+        return res.status(404).json({ message: "No Books found with this title" });
     }
 
     return res.status(200).json(booksByTitle);
@@ -88,8 +112,8 @@ public_users.get('/review/:isbn', function (req, res) {
     //Write your code here
     //return res.status(300).json({ message: "Yet to be implemented" });
     const ISBN = req.params.isbn;
-    if(!books[ISBN]) {
-        return res.status(404).json({message: "Book not found"});
+    if (!books[ISBN]) {
+        return res.status(404).json({ message: "Book not found" });
     }
 
     return res.status(200).json(books[ISBN].reviews);
